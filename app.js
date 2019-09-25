@@ -35,10 +35,12 @@ const documentationApp = express();
 
 // Set up configuration variables
 var useAutoStoreData = process.env.USE_AUTO_STORE_DATA || config.useAutoStoreData
+var useCookieSessionStore = process.env.USE_COOKIE_SESSION_STORE || config.useCookieSessionStore
 
 // Add variables that are available in all views
 app.locals.asset_path = '/public/'
 app.locals.useAutoStoreData = (useAutoStoreData === 'true')
+app.locals.useCookieSessionStore = (useCookieSessionStore === 'true')
 app.locals.serviceName = config.serviceName
 
 
@@ -71,12 +73,20 @@ let sessionOptions = {
   }
 }
 
-// Support session data in memory
-app.use(sessionInMemory(Object.assign(sessionOptions, {
-  name: sessionName,
-  resave: false,
-  saveUninitialized: false
-})))
+// Support session data in cookie or memory
+if (useCookieSessionStore === 'true' && !onlyDocumentation) {
+  app.use(sessionInCookie(Object.assign(sessionOptions, {
+    cookieName: sessionName,
+    proxy: true,
+    requestKey: 'session'
+  })))
+} else {
+  app.use(sessionInMemory(Object.assign(sessionOptions, {
+    name: sessionName,
+    resave: false,
+    saveUninitialized: false
+  })))
+}
 
 
 // Support for parsing data in POSTs
